@@ -84,7 +84,16 @@ func githubPayload(payload GithubPayload, discord *discordgo.Session, r *http.Re
     event := r.Header.Get("X-GitHub-Event")
     switch event {
     case "push":
+        num := len(payload.Commits)
         user := payload.HeadCommit.Author.Username
-        discord.ChannelMessageSend(channel, fmt.Sprintf("%s pushed a new [commit](<%s>) to [%s](<%s>): %s", user, payload.HeadCommit.Url, payload.Repo.Name, payload.Repo.Url, payload.HeadCommit.Message))
+        if num == 1 {
+            discord.ChannelMessageSend(channel, fmt.Sprintf("%s pushed a new [commit](<%s>) to [%s](<%s>): %s", user, payload.HeadCommit.Url, payload.Repo.Name, payload.Repo.Url, payload.HeadCommit.Message))
+        } else {
+            message := fmt.Sprintf("%s pushed %d new commits to [%s](<%s>):\n", user, num, payload.Repo.Name, payload.Repo.Url)
+            for _, commit := range payload.Commits {
+                message += fmt.Sprintf("- [%s](<%s>): %s", commit.ID, commit.Url, commit.Message)
+            }
+            discord.ChannelMessageSend(channel, message)
+        }
     }
 }
