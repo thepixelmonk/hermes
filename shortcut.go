@@ -46,13 +46,12 @@ type Action struct {
 }
 
 type Change struct {
-    New   interface{}   `json:"new"`
-    Old   interface{}   `json:"old"`
-    Adds  []interface{} `json:"adds"`
+    New interface{} `json:"new"`
+    Old interface{} `json:"old"`
 }
 
 type Reference struct {
-    ID         int    `json:"id"`
+    ID         interface{}    `json:"id"`
     EntityType string `json:"entity_type"`
     Name       string `json:"name"`
 }
@@ -76,6 +75,7 @@ func shortcutHandler(w http.ResponseWriter, r *http.Request) {
     var payload WebhookEvent
     err = json.Unmarshal(body, &payload)
     if err != nil {
+        log.Fatal(err)
         http.Error(w, "Error parsing request body", http.StatusBadRequest)
         return
     }
@@ -91,22 +91,38 @@ func shortcutPayload(event WebhookEvent, discord *discordgo.Session) {
     var channel = os.Getenv("SC_DISCORD_CHANNEL")
 
     for _, action := range event.Actions {
+        user := fetchUserName(action.AuthorID)
+        members, err := discord.GuildMembers(server, "", 1000)
+
+        if err == nil {
+            for _, member := range members {
+                if user == member.User.Username {
+                    user = fmt.Sprintf("<@%s>", member.User.ID)
+                }
+            }
+        }
+
         switch action.EntityType {
+        case "story":
+            switch action.Action {
+            case "create":
+                discord.ChannelMessageSend(channel, fmt.Sprintf("%s created a new story: [%s](<%s>)", user, action.Name, action.AppURL))
+            case "update":
+                story := fetchStoryName(action.AppURL)
+                state := fetchWorkflowState(action.Changes["workflow_state_id"].New, event.References)
+                switch state {
+                case "Todo":
+                    discord.ChannelMessageSend(channel, fmt.Sprintf("%s moved a story into Todo: [%s](<%s>)", user, story, action.AppURL))
+                case "In Progress":
+                    discord.ChannelMessageSend(channel, fmt.Sprintf("%s started working on: [%s](<%s>)", user, story, action.AppURL))
+                case "Done":
+                    discord.ChannelMessageSend(channel, fmt.Sprintf("%s completed: [%s](<%s>)", user, story, action.AppURL))
+                }
+            }
         case "story-comment":
             switch action.Action {
             case "create":
-                user := fetchUserName(action.AuthorID)
                 story := fetchStoryName(action.AppURL)
-                members, err := discord.GuildMembers(server, "", 1000)
-
-                if err == nil {
-                    for _, member := range members {
-                        if user == member.User.Username {
-                            user = fmt.Sprintf("<@%s>", member.User.ID)
-                        }
-                    }
-                }
-
                 discord.ChannelMessageSend(channel, fmt.Sprintf("%s made a new comment on [%s](<%s>): %s", user, story, action.AppURL, action.Text))
             }
         }
@@ -146,8 +162,16 @@ func fetchStoryName(uri string) string {
 
     var story ShortcutStory
     err = json.Unmarshal(body, &story); if err != nil { log.Fatal("Error parsing request body: ", err) }
-    fmt.Printf("%+v\n", story)
-    fmt.Println(storyID)
 
     return story.Name
+}
+
+func fetchWorkflowState(id interface{}, refs []Reference) string {
+    for _, ref := range refs {
+       if id == ref.ID {
+            return ref.Name
+        } 
+    }
+
+    return ""
 }
