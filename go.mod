@@ -1,4 +1,4 @@
-module github.com/thepixelmonk/shortcord
+module github.com/thepixelmonk/hermes
 
 go 1.21.4
 
