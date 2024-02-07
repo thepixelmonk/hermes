@@ -1,5 +1,3 @@
-// +heroku goVersion 1.22
-
 module github.com/thepixelmonk/hermes
 
 go 1.21.4
