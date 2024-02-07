@@ -97,3 +97,4 @@ func githubPayload(payload GithubPayload, discord *discordgo.Session, r *http.Re
         }
     }
 }
+
