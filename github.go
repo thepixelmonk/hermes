@@ -6,6 +6,9 @@ import (
     "log"
     "fmt"
     "net/http"
+    "crypto/hmac"
+    "crypto/sha256"
+    "encoding/hex"
     "encoding/json"
     "github.com/bwmarrin/discordgo"
 )
@@ -51,8 +54,10 @@ type Committer struct {
 
 func githubHandler(w http.ResponseWriter, r *http.Request) { 
     var token = os.Getenv("SC_DISCORD_TOKEN")
+    var secret = os.Getenv("SC_WEBHOOK_SECRET")
     discord, err := discordgo.New(token); if err != nil { log.Fatal("Invalid auth token") }
     discord.Identify.Intents = discordgo.IntentsGuildMembers
+    rawSignature := r.Header.Get("X-Hub-Signature-256")
 
     if r.Method != http.MethodPost {
         http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
@@ -64,8 +69,23 @@ func githubHandler(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Error reading request body", http.StatusInternalServerError)
         return
     }
+    r.Body = io.NopCloser(r.Body)
     
     var payload GithubPayload
+    if len(rawSignature) > 0 {
+        signature := rawSignature[7:]
+
+        mac := hmac.New(sha256.New, []byte(secret))
+        mac.Write(body)
+        expectedMAC := mac.Sum(nil)
+
+        expectedSignature := hex.EncodeToString(expectedMAC)
+
+        if !hmac.Equal([]byte(expectedSignature), []byte(signature)) {
+            http.Error(w, "Invalid signature", http.StatusUnauthorized)
+            return
+        }
+    }
     err = json.Unmarshal(body, &payload)
     if err != nil {
         http.Error(w, "Error parsing request body", http.StatusBadRequest)

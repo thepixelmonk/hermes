@@ -9,6 +9,9 @@ import (
     "strings"
     "net/url"
     "net/http"
+    "crypto/hmac"
+    "crypto/sha256"
+    "encoding/hex"
     "encoding/json"
     "github.com/bwmarrin/discordgo"
 )
@@ -57,9 +60,12 @@ type Reference struct {
 }
 
 func shortcutHandler(w http.ResponseWriter, r *http.Request) { 
+    var payload WebhookEvent
     var token = os.Getenv("SC_DISCORD_TOKEN")
+    var secret = os.Getenv("SC_WEBHOOK_SECRET")
     discord, err := discordgo.New(token); if err != nil { log.Fatal("Invalid auth token") }
     discord.Identify.Intents = discordgo.IntentsGuildMembers
+    signature := r.Header.Get("Payload-Signature")
 
     if r.Method != http.MethodPost {
         http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
@@ -71,15 +77,29 @@ func shortcutHandler(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Error reading request body", http.StatusInternalServerError)
         return
     }
-    
-    var payload WebhookEvent
-    err = json.Unmarshal(body, &payload)
+    r.Body = io.NopCloser(r.Body)
+
+    if len(signature) > 0 {
+        hash := hmac.New(sha256.New, []byte(secret))
+        _, err = hash.Write(body)
+        if err != nil {
+            http.Error(w, "Error computing HMAC", http.StatusInternalServerError)
+            return
+        }
+        computed := hex.EncodeToString(hash.Sum(nil))
+
+        if !hmac.Equal([]byte(computed), []byte(signature)) {
+            http.Error(w, "Invalid signature", http.StatusUnauthorized)
+            return
+        }
+    }
+    err = json.Unmarshal(body, &payload)  
     if err != nil {
         log.Fatal(err)
         http.Error(w, "Error parsing request body", http.StatusBadRequest)
         return
     }
-    
+
     shortcutPayload(payload, discord)
     
     w.WriteHeader(http.StatusOK)
