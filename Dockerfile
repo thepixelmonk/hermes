@@ -8,6 +8,6 @@ COPY *.go ./
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /hermes
 
-EXPOSE 8080
+EXPOSE 80
 
 CMD ["/hermes"]
