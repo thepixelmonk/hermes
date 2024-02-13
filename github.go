@@ -15,7 +15,7 @@ import (
 
 type GithubPayload struct {
     Ref        string     `json:"ref"`
-    Repo GithubRepo `json:"repository"`
+    Repo       GithubRepo `json:"repository"`
     Commits    []Commit   `json:"commits"`
     HeadCommit Commit     `json:"head_commit"`
 }

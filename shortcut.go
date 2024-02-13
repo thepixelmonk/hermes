@@ -17,8 +17,8 @@ import (
 )
 
 type ShortcutMember struct {
-    ID string `json:"id"`
-    Name string `json:"name"`
+    ID          string `json:"id"`
+    Name        string `json:"name"`
     MentionName string `json:"mention_name"`
 }
 
@@ -54,9 +54,9 @@ type Change struct {
 }
 
 type Reference struct {
-    ID         interface{}    `json:"id"`
-    EntityType string `json:"entity_type"`
-    Name       string `json:"name"`
+    ID         interface{} `json:"id"`
+    EntityType string      `json:"entity_type"`
+    Name       string      `json:"name"`
 }
 
 func shortcutHandler(w http.ResponseWriter, r *http.Request) { 
