@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-    var port = os.Getenv("SC_PORT")
+    var port = os.Getenv("HERMES_PORT")
     http.HandleFunc("/github", githubHandler)
     http.HandleFunc("/shortcut", shortcutHandler)
     fmt.Println("Listening on :" + port + " ...\n")

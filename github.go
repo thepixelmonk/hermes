@@ -53,8 +53,8 @@ type Committer struct {
 }
 
 func githubHandler(w http.ResponseWriter, r *http.Request) { 
-    var token = os.Getenv("SC_DISCORD_TOKEN")
-    var secret = os.Getenv("SC_WEBHOOK_SECRET")
+    var token = os.Getenv("HERMES_DISCORD_TOKEN")
+    var secret = os.Getenv("HERMES_WEBHOOK_SECRET")
     discord, err := discordgo.New(token); if err != nil { log.Fatal("Invalid auth token") }
     discord.Identify.Intents = discordgo.IntentsGuildMembers
     rawSignature := r.Header.Get("X-Hub-Signature-256")
@@ -99,7 +99,7 @@ func githubHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func githubPayload(payload GithubPayload, discord *discordgo.Session, r *http.Request) {
-    var channel = os.Getenv("SC_DISCORD_CHANNEL")
+    var channel = os.Getenv("HERMES_DISCORD_CHANNEL")
 
     event := r.Header.Get("X-GitHub-Event")
     switch event {

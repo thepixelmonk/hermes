@@ -61,8 +61,8 @@ type Reference struct {
 
 func shortcutHandler(w http.ResponseWriter, r *http.Request) { 
     var payload WebhookEvent
-    var token = os.Getenv("SC_DISCORD_TOKEN")
-    var secret = os.Getenv("SC_WEBHOOK_SECRET")
+    var token = os.Getenv("HERMES_DISCORD_TOKEN")
+    var secret = os.Getenv("HERMES_WEBHOOK_SECRET")
     discord, err := discordgo.New(token); if err != nil { log.Fatal("Invalid auth token") }
     discord.Identify.Intents = discordgo.IntentsGuildMembers
     signature := r.Header.Get("Payload-Signature")
@@ -107,8 +107,8 @@ func shortcutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func shortcutPayload(event WebhookEvent, discord *discordgo.Session) {
-    var server = os.Getenv("SC_DISCORD_SERVER")
-    var channel = os.Getenv("SC_DISCORD_CHANNEL")
+    var server = os.Getenv("HERMES_DISCORD_SERVER")
+    var channel = os.Getenv("HERMES_DISCORD_CHANNEL")
 
     for _, action := range event.Actions {
         user := fetchUserName(action.AuthorID)
@@ -150,7 +150,7 @@ func shortcutPayload(event WebhookEvent, discord *discordgo.Session) {
 }
 
 func fetchUserName(id string) string {
-    var token = os.Getenv("SC_SHORTCUT_TOKEN")
+    var token = os.Getenv("HERMES_SHORTCUT_TOKEN")
 
     client := &http.Client{}
     req, err := http.NewRequest("GET", "https://api.app.shortcut.com/api/v3/member", nil); if err != nil { log.Fatal("Error creating request: ", err) }
@@ -167,7 +167,7 @@ func fetchUserName(id string) string {
 }
 
 func fetchStoryName(uri string) string {
-    var token = os.Getenv("SC_SHORTCUT_TOKEN")
+    var token = os.Getenv("HERMES_SHORTCUT_TOKEN")
     parsed, err := url.Parse(uri); if err != nil { log.Fatal(err) }
     segments := strings.Split(parsed.Path, "/")
     storyID := segments[3]
