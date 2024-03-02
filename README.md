@@ -1,2 +1,2 @@
-# Shortcut integration for discord
+# Notifications for discord
 
